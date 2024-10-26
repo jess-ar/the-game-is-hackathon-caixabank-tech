@@ -5,20 +5,34 @@ import PropTypes from 'prop-types';
 
 const ExportButton = React.memo(function ExportButton({ data, filename, headers, label }) {
     const handleExport = useCallback(() => {
-        // Convert data to CSV format
-        // Instructions:
-        // - Use the convertArrayOfObjectsToCSV function to convert the data array to a CSV string.
-        // - Create a Blob object with CSV content
-        // - Create a temporary link to download the file
+        if (!data || data.length === 0) return;
+
+        const csv = convertArrayOfObjectsToCSV(data, headers);
+        if (!csv) return;
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.setAttribute('href', URL.createObjectURL(blob));
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }, [data, filename, headers]);
 
-    // Function to convert object array to CSV
-    // Instructions:
-    // - Implement logic to convert an array of objects into a CSV string.
-    // - Ensure the headers are used to extract the correct fields from each object in the data array.
-    const convertArrayOfObjectsToCSV = () => {
-        // Implement the conversion logic here
+    const convertArrayOfObjectsToCSV = (data, headers) => {
+        if (!data || !data.length) return null;
+
+        const headerString = headers.join(',') + '\n';
+        const rows = data.map((item) => {
+            return headers.map((header) => {
+                const value = item[header] !== undefined ? item[header] : '';
+                return `"${value}"`;
+            }).join(',');
+        });
+
+        return headerString + rows.join('\n');
     };
+
 
     return (
         <Button
@@ -33,7 +47,7 @@ const ExportButton = React.memo(function ExportButton({ data, filename, headers,
     );
 });
 
-// Define types of props for better verification and documentation
+
 ExportButton.propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
     filename: PropTypes.string,
@@ -41,7 +55,6 @@ ExportButton.propTypes = {
     label: PropTypes.string,
 };
 
-// Define default props
 ExportButton.defaultProps = {
     filename: 'data.csv',
     label: 'Export CSV',
