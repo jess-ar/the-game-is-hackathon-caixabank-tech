@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
     Table,
     TableBody,
@@ -7,19 +7,27 @@ import {
     TableHead,
     TableRow,
     Paper,
+    Typography,
 } from '@mui/material';
+import TransactionRow from './TransactionRow';
 
-function RecentTransactions({ transactions }) {
+function RecentTransactions({  transactions, onEdit, onDelete }) {
 
-    // Recent transactions
-    // Instructions:
-    // - Sort the transactions by date, showing the most recent first.
-    // - Extract only the last 5 transactions for display.
-    const recentTransactions = []; // Implement logic to get the last 5 transactions
+    const recentTransactions = useMemo(() => {
+        if (!Array.isArray(transactions)) {
+            return [];
+        }
+        return transactions
+            .slice()
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 5);
+    }, [transactions]);
 
     return (
         <div>
-            <h3>Recent Transactions</h3>
+            <Typography variant="h3" gutterBottom>
+                Recent Transactions
+            </Typography>
             <TableContainer component={Paper}>
                 <Table size="small">
                     <TableHead>
@@ -32,10 +40,14 @@ function RecentTransactions({ transactions }) {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {/* Instructions:
-                            - Map over the recentTransactions array and render each transaction in a table row.
-                            - For each row, display the transaction's description, amount, type (income/expense), category, and date.
-                            - Ensure that the amount is formatted to two decimal places. */}
+                    {recentTransactions.map((transaction) => (
+                            <TransactionRow 
+                                key={transaction.id} 
+                                transaction={transaction} 
+                                onEdit={onEdit} 
+                                onDelete={onDelete} 
+                            />
+                        ))}
                     </TableBody>
                 </Table>
             </TableContainer>
