@@ -5,52 +5,72 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, S
 import { categoryKeywords } from '../constants/categoryKeywords';
 import { allCategories } from '../constants/categories';
 
+
 function TransactionForm({ transactionToEdit, onClose }) {
     const transactions = useStore(transactionsStore);
-
-    // Local state variables
-    // Instructions:
-    // - Ensure the form fields are correctly initialized when in "edit mode."
+    
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [type, setType] = useState('expense');
     const [category, setCategory] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-    // Implement the function to assign a category based on description keywords
-    const assignCategory = (desc) => {
-        // Instructions: 
-        // - Loop through `categoryKeywords` to find matching keywords
-        // - If a keyword is found in the description, return the category
-        // - Return 'Other Expenses' if no category is found
-
-        return 'Other Expenses';
-    };
-
-    // Auto-assign a category if adding a new transaction
     useEffect(() => {
-        if (!transactionToEdit) {
-            // Instructions: 
-            // - Call the `assignCategory` function to determine the category based on the description
-            // - Then, update the category state with the result
+        const assignCategory = (desc) => {
+            for (const [keyword, cat] of Object.entries(categoryKeywords)) {
+                if (desc.toLowerCase().includes(keyword.toLowerCase())) {
+                    return cat;
+                }
+            }
+            return 'Other Expenses';
+        };
+    
+        if (transactionToEdit) {
+            setDescription(transactionToEdit.description);
+            setAmount(transactionToEdit.amount);
+            setType(transactionToEdit.type);
+            setCategory(transactionToEdit.category);
+            setDate(transactionToEdit.date);
+        } else {
+            setCategory(assignCategory(description));
         }
-
-        // Instructions: Add the proper dependencies to the useEffect hook
-    }, []);
+    }, [transactionToEdit, description]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Instructions:
-        // - Validate that all fields are filled in.
-        // - If editing, update the transaction in the store.
-        // - If adding a new transaction, create it and save it to the store.
-        // - The transaction type should be either "income" or "expense".
-        // - Ensure the transaction has the following structure: { id, description, amount, type, category, date }
+
+        if (!description || !amount || !type || !category || !date) {
+            alert("Please fill out all fields.");
+            return;
+        }
+
+        const transaction = {
+            id: transactionToEdit ? transactionToEdit.id : new Date().getTime(),
+            description,
+            amount: parseFloat(amount),
+            type,
+            category,
+            date,
+        };
+
+        if (transactionToEdit) {
+            transactions.update((existingTransactions) => {
+                return existingTransactions.map((t) =>
+                    t.id === transactionToEdit.id ? transaction : t
+                );
+            });
+        } else {
+            transactions.update((existingTransactions) => [...existingTransactions, transaction]);
+        }
+
+        onClose();
     };
 
     return (
         <Dialog open={true} onClose={onClose}>
-            <DialogTitle>{transactionToEdit ? 'Edit Transaction' : 'Add Transaction'}</DialogTitle>
+            <DialogTitle>
+                {transactionToEdit ? 'Edit Transaction' : 'Add Transaction'}
+            </DialogTitle>
             <form onSubmit={handleSubmit}>
                 <DialogContent>
                     <Grid container spacing={2}>
@@ -63,6 +83,7 @@ function TransactionForm({ transactionToEdit, onClose }) {
                                 margin="normal"
                                 required
                                 name="description"
+                                className="border border-gray-300 rounded-lg p-2"
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -76,10 +97,11 @@ function TransactionForm({ transactionToEdit, onClose }) {
                                 required
                                 inputProps={{ min: 0, step: '0.01' }}
                                 name="amount"
+                                className="border border-gray-300 rounded-lg p-2"
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth margin="normal" required>
+                            <FormControl fullWidth margin="normal" required >
                                 <InputLabel id="type-label">Type</InputLabel>
                                 <Select
                                     labelId="type-label"
@@ -87,7 +109,7 @@ function TransactionForm({ transactionToEdit, onClose }) {
                                     onChange={(e) => setType(e.target.value)}
                                     label="Type"
                                     name="type"
-                                    inputProps={{ name: 'filterTypeForm' }}
+                                    className="border border-gray-300 rounded-lg"
                                 >
                                     <MenuItem value="income">Income</MenuItem>
                                     <MenuItem value="expense">Expense</MenuItem>
@@ -103,14 +125,28 @@ function TransactionForm({ transactionToEdit, onClose }) {
                                     onChange={(e) => setCategory(e.target.value)}
                                     label="Category"
                                     name="category"
-                                    inputProps={{ name: 'filterCategoryForm' }}
                                 >
-                                    {/* Instructions: Use the `allCategories` imported file to render the categories as menu items */}
+                                    {allCategories.map((cat) => (
+                                        <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                                    ))}
                                     <MenuItem value="Other Expenses">Other Expenses</MenuItem>
                                 </Select>
                             </FormControl>
                         </Grid>
-                        {/* Fill in the remaining field for date type */}
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                label="Date"
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                required
+                                InputLabelProps={{
+                                    shrink: true,
+                                }}
+                            />
+                        </Grid>
                     </Grid>
                 </DialogContent>
                 <DialogActions>

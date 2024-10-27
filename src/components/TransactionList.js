@@ -1,6 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useStore } from '@nanostores/react';
 import { transactionsStore } from '../stores/transactionStore';
+import TransactionForm from './TransactionForm';
+import TransactionRow from './TransactionRow';
+import { allCategories } from '../constants/categories';
+import TablePagination from '@mui/material/TablePagination';
+
 import {
     Table,
     TableBody,
@@ -18,6 +23,7 @@ import {
     Typography
 } from '@mui/material';
 
+
 function TransactionList() {
     const transactions = useStore(transactionsStore);
 
@@ -26,22 +32,46 @@ function TransactionList() {
     const [sortField, setSortField] = useState('');
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Implement delete functionality
-    // Instructions:
-    // - Implement the logic to delete a transaction by its ID.
-    // - Make sure the transactions state/store is updated after deletion.
+
     const deleteTransaction = useCallback((id) => {
-        // Implement functionality to delete a transaction
-    }, [transactions]);
-
-    // Implement edit functionality
-    // Instructions:
-    // - Implement logic to edit a transaction.
-    // - Ensure the updated transaction is saved in the store.
-    const handleEdit = useCallback((transaction) => {
-        // Implement functionality to edit a transaction
+        transactionsStore.update((prev) => prev.filter((transaction) => transaction.id !== id));
     }, []);
+
+    const handleEdit = useCallback((transaction) => {
+        transactionsStore.update((prev) =>
+            prev.map((t) => t.id === transaction.id ? transaction : t)
+        );
+    }, []);
+
+    const filteredTransactions = useMemo(() =>
+        transactions
+            .filter(transaction =>
+                (!filterCategory || transaction.category === filterCategory) &&
+                (!filterType || transaction.type === filterType)
+            )
+            .sort((a, b) => {
+                if (sortField === 'amount') return b.amount - a.amount;
+                if (sortField === 'date') return new Date(b.date) - new Date(a.date);
+                return 0;
+            })
+        , [transactions, filterCategory, filterType, sortField]);
+
+    const paginatedTransactions = useMemo(() => {
+        const start = page * rowsPerPage;
+        const end = start + rowsPerPage;
+        return filteredTransactions.slice(start, end);
+    }, [filteredTransactions, page, rowsPerPage]);
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
 
     return (
         <Box sx={{ mt: 4 }}>
@@ -49,19 +79,19 @@ function TransactionList() {
                 Transaction List
             </Typography>
 
-            {/* Add transaction */}
-            {/* Instructions:
-                - Implement the logic to open a form for adding a new transaction.
-                - Trigger the form/modal through the onClick event. */}
-            <Button variant="contained" color="primary" onClick={() => {/* Implement functionality to add transaction */ }}>
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setIsModalOpen(true)}
+            >
                 Add Transaction
             </Button>
+            {isModalOpen && (
+                <TransactionForm
+                    onClose={() => setIsModalOpen(false)}
+                />
+            )}
 
-            {/* Filters */}
-            {/* Instructions:
-                - Implement category and type filters using Material UI's `Select` component.
-                - Update the filterCategory and filterType state values when the user makes a selection.
-                - Apply the selected filters to the displayed transactions. */}
             <Box sx={{ display: 'flex', gap: 2, my: 2 }}>
                 <FormControl sx={{ minWidth: 120 }}>
                     <InputLabel id="filter-category-label">Category</InputLabel>
@@ -71,7 +101,9 @@ function TransactionList() {
                         onChange={(e) => setFilterCategory(e.target.value)}
                     >
                         <MenuItem value="">All</MenuItem>
-                        {/* Add additional categories dynamically */}
+                        {allCategories.map((cat) => (
+                            <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
@@ -102,11 +134,6 @@ function TransactionList() {
                 </FormControl>
             </Box>
 
-            {/* Table of transactions */}
-            {/* Instructions:
-                - Render the transactions in a table format using Material UI's `Table` component.
-                - For each transaction, display the following details: description, amount, type, category, and date.
-                - Implement the action buttons (Edit, Delete) within each row for managing transactions. */}
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
@@ -120,12 +147,25 @@ function TransactionList() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {/* Map over the transactions and render each transaction as a row.
-                            - For each row, add logic for Edit and Delete actions.
-                            - Display the transaction data in the respective table cells. */}
+                        {paginatedTransactions.map((transaction) => (
+                            <TransactionRow
+                                key={transaction.id}
+                                transaction={transaction}
+                                onEdit={handleEdit}
+                                onDelete={deleteTransaction}
+                            />
+                        ))}
                     </TableBody>
                 </Table>
             </TableContainer>
+            <TablePagination
+                component="div"
+                count={filteredTransactions.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+            />
         </Box>
     );
 }
