@@ -44,9 +44,6 @@ function Dashboard() {
         console.log("Delete transaction with id:", id);
     };
 
-
-
-
     return (
         <Profiler id="Dashboard" onRender={onRenderCallback}>
             <Box sx={{ p: 4 }}>

@@ -1,10 +1,12 @@
 module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-    "./public/index.html",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
+    plugins: {
+        autoprefixer: {
+            overrideBrowserslist: [
+                '>0.2%',
+                'not dead',
+                'not op_mini all',
+                'last 2 versions',
+            ],
+        },
+    },
 };
