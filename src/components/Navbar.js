@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, startTransition } from "react";
 import {
     AppBar,
     Toolbar,
@@ -15,14 +15,15 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "@nanostores/react";
-import { authStore } from "../stores/authStore";
+import { authStore, logout } from "../stores/authStore";
 import caixabankIcon from "../assets/caixabank-icon-blue.png";
 
 const Navbar = ({ toggleTheme, isDarkMode }) => {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const { isAuthenticated } = useStore(authStore);
+    const navigate = useNavigate();
 
     const toggleDrawer = (open) => (event) => {
         if (
@@ -32,6 +33,13 @@ const Navbar = ({ toggleTheme, isDarkMode }) => {
             return;
         }
         setDrawerOpen(open);
+    };
+
+    const handleLogout = () => {
+        logout();
+        startTransition(() => {
+            navigate("/login");
+        });
     };
 
     return (
@@ -50,7 +58,6 @@ const Navbar = ({ toggleTheme, isDarkMode }) => {
                         <MenuIcon />
                     </IconButton>
 
-                    {/* Logo en la esquina superior izquierda */}
                     <Link
                         to="/"
                         style={{
@@ -92,13 +99,15 @@ const Navbar = ({ toggleTheme, isDarkMode }) => {
                         <Link to="/support" style={{ textDecoration: "none" }}>
                             <Button sx={{ color: "black" }}>Support</Button>
                         </Link>
-                        <Link to="/logout" style={{ textDecoration: "none" }}>
-                            <Button sx={{ color: "black" }}>Logout</Button>
-                        </Link>
+                        {isAuthenticated && (
+                            <Button onClick={handleLogout} sx={{ color: "black" }}>
+                                Logout
+                            </Button>
+                        )}
                     </Box>
 
 
-                    {!isAuthenticated ? ( // Si no está autenticado, muestra los botones de Login y Register
+                    {!isAuthenticated ? (
                         <>
                             <Link to="/login" style={{ textDecoration: 'none' }}>
                                 <Button sx={{ color: 'black', marginRight: 2 }}>Login</Button>
@@ -110,7 +119,7 @@ const Navbar = ({ toggleTheme, isDarkMode }) => {
                     ) : (
                         <IconButton>
                             <Avatar
-                                src="/namine.jpg" // Ruta correcta a la imagen del Avatar
+                                src="/namine.jpg"
                                 alt="User Avatar"
                                 sx={{ width: 40, height: 40 }}
                             />
@@ -154,11 +163,9 @@ const Navbar = ({ toggleTheme, isDarkMode }) => {
                                         <ListItemText primary="Settings" />
                                     </ListItem>
                                 </Link>
-                                <Link to="/logout" style={{ textDecoration: "none" }}>
-                                    <ListItem button>
-                                        <ListItemText primary="Logout" />
-                                    </ListItem>
-                                </Link>
+                                <ListItem button onClick={handleLogout}>
+                                    <ListItemText primary="Logout" />
+                                </ListItem>
                             </>
                         ) : (
                             <>

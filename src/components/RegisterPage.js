@@ -1,41 +1,79 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, TextField, Typography, Alert } from '@mui/material';
-import { login } from '../stores/authStore'; 
+import { Box, Button, TextField, Typography, Alert, IconButton, InputAdornment } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { login } from '../stores/authStore';
 
 function RegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [confirmPasswordError, setConfirmPasswordError] = useState('');
+    const [generalError, setGeneralError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const navigate = useNavigate();
+
+    const isValidEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
+    const isValidPassword = (password) => {
+        // Password must be at least 8 characters, with at least one lowercase letter and one number
+        // This requirement aligns with the default password provided for the hackathon.
+        const passwordRegex = /^(?=.*[a-z])(?=.*\d)[a-z\d]{8,}$/;
+        return passwordRegex.test(password);
+    };
 
     const handleRegister = (e) => {
         e.preventDefault();
+        setEmailError('');
+        setPasswordError('');
+        setConfirmPasswordError('');
+        setGeneralError('');
 
-        // Instructions:
+        let isValid = true;
 
-        // Validate that all fields (email, password, confirmPassword) are filled.
-        // - If any field is empty, display an error message.
+        if (!email) {
+            setEmailError("Email is required.");
+            isValid = false;
+        } else if (!isValidEmail(email)) {
+            setEmailError("Please enter a valid email.");
+            isValid = false;
+        }
 
-        // Check if the passwords match.
-        // - If the passwords do not match, set an appropriate error message.
+        if (!password) {
+            setPasswordError("Password is required.");
+            isValid = false;
+        } else if (!isValidPassword(password)) {
+            setPasswordError("Password must be at least 8 characters and include a lowercase letter and a number.");
+            isValid = false;
+        }
 
-        // Check if the email is already registered in localStorage.
-        // - Retrieve the existing user from localStorage and verify if the entered email already exists.
-        // - If the email exists, set an error message.
+        if (!confirmPassword) {
+            setConfirmPasswordError("Please confirm your password.");
+            isValid = false;
+        } else if (password !== confirmPassword) {
+            setConfirmPasswordError("Passwords do not match.");
+            isValid = false;
+        }
 
-        // Save the new user's data to localStorage.
-        // - If validation passes, store the new user's email and password in localStorage.
+        if (!isValid) return;
 
-        // Automatically log the user in after successful registration.
-        // - Call the `login` function to set the authenticated user in the store.
+        const existingUser = localStorage.getItem(email);
+        if (existingUser) {
+            setGeneralError("This email is already registered.");
+            return;
+        }
 
-        // Redirect the user to the dashboard.
-        // - After successful registration and login, redirect the user to the home/dashboard page.
-
+        localStorage.setItem(email, JSON.stringify({ email, password }));
+        login({ email });
         setSuccess(true);
+
         setTimeout(() => {
             navigate('/');
         }, 2000);
@@ -51,30 +89,60 @@ function RegisterPage() {
                     label="Email"
                     type="email"
                     value={email}
-                    name="email"
                     onChange={(e) => setEmail(e.target.value)}
                     fullWidth
                     margin="normal"
+                    InputLabelProps={{ required: false }}
+                    error={Boolean(emailError)}
+                    helperText={emailError}
                 />
 
                 <TextField
                     label="Password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
-                    name="password"
                     onChange={(e) => setPassword(e.target.value)}
                     fullWidth
                     margin="normal"
+                    InputLabelProps={{ required: false }}
+                    error={Boolean(passwordError)}
+                    helperText={passwordError}
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    edge="end"
+                                >
+                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
                 />
 
                 <TextField
                     label="Confirm Password"
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
-                    name="confirmPassword"
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     fullWidth
                     margin="normal"
+                    InputLabelProps={{ required: false }}
+                    error={Boolean(confirmPasswordError)}
+                    helperText={confirmPasswordError}
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    edge="end"
+                                >
+                                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
                 />
 
                 <Button
@@ -88,9 +156,9 @@ function RegisterPage() {
                 </Button>
             </form>
 
-            {error && (
+            {generalError && (
                 <Alert severity="error" sx={{ mt: 2 }}>
-                    {error}
+                    {generalError}
                 </Alert>
             )}
 

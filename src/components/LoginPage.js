@@ -7,14 +7,18 @@ import {
     TextField,
     Typography,
     Alert,
-    Grid
+    Grid,
+    IconButton, InputAdornment
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+
 
 function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [showCredentials, setShowCredentials] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     const defaultCredentials = {
@@ -22,26 +26,33 @@ function LoginPage() {
         password: 'password123'
     };
 
+    const validateFields = () => {
+        if (!email || !password) {
+            setError('Please fill in all fields.');
+            return false;
+        }
+        return true;
+    };
+
+    const validateCredentials = () => {
+        if (email === defaultCredentials.email && password === defaultCredentials.password) {
+            login();
+            navigate('/');
+        } else {
+            setError('Incorrect credentials. Please try again.');
+        }
+    };
+
     const handleLogin = (e) => {
         e.preventDefault();
+        setError('');
 
-        // Validate that fields are not empty
-        // Instructions:
-        // - Check if the email and password fields are filled.
-        if (!email || !password) {
-            // - If either is empty, set an appropriate error message.
-            return;
+        if (validateFields()) {
+            validateCredentials();
         }
-
-        // Validate credentials
-        // Instructions:
-        // - Check if the entered credentials match the default credentials or the stored user credentials.
-        // - If valid, call the `login` function and navigate to the homepage.
-        // - If invalid, set an error message.
     };
 
     const handleShowDefaultCredentials = () => {
-        // Show default credentials in case the user requests it
         setEmail(defaultCredentials.email);
         setPassword(defaultCredentials.password);
         setShowCredentials(true);
@@ -53,41 +64,84 @@ function LoginPage() {
                 Login
             </Typography>
             <form onSubmit={handleLogin}>
-                <TextField
-                    label="Email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    fullWidth
-                    margin="normal"
-                />
-                <TextField
-                    label="Password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    fullWidth
-                    margin="normal"
-                />
-                <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                >
-                    Login
-                </Button>
+                <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                        <TextField
+                            label="Email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            fullWidth
+                            margin="normal"
+                            aria-label="Email"
+                            required
+                            error={Boolean(error && !email)}
+                            helperText={error && !email ? "The email is required." : ''}
+                            InputLabelProps={{ required: false }}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField
+                            label="Password"
+                            type={showPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            fullWidth
+                            margin="normal"
+                            aria-label="Password"
+                            required
+                            error={Boolean(error && !password)}
+                            helperText={error && !password ? 'The password is required.' : ''}
+                            InputLabelProps={{ required: false }}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            edge="end"
+                                        >
+                                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        {error && !(!email || !password) && (
+                            <Alert severity="error" sx={{ mt: 2 }} role="alert">
+                                {error}
+                            </Alert>
+                        )}
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            color="primary"
+                            fullWidth
+                            sx={{ mt: 2 }}
+                        >
+                            Login
+                        </Button>
+                    </Grid>
+                </Grid>
             </form>
 
-            {/* Show error message when applicable */}
-            {/* - Use the Alert component to display the error message if one exists. */}
-            {/* - Ensure that registration and forgot password options are displayed below the error message if present. */}
+            <Button
+                variant="text"
+                color="secondary"
+                onClick={handleShowDefaultCredentials}
+                sx={{ mt: 2 }}
+                fullWidth
+            >
+                Show Default Credentials
+            </Button>
 
             {showCredentials && (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                    <strong>Email:</strong> {defaultCredentials.email}<br />
-                    <strong>Password:</strong> {defaultCredentials.password}
+                <Alert severity="info" sx={{ mt: 2 }} role="alert">
+                    <strong>Email</strong> {defaultCredentials.email}<br />
+                    <strong>Password</strong> {defaultCredentials.password}
                 </Alert>
             )}
         </Box>
