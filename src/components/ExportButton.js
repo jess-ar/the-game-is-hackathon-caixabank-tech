@@ -33,7 +33,6 @@ const ExportButton = React.memo(function ExportButton({ data, filename, headers,
         return headerString + rows.join('\n');
     };
 
-
     return (
         <Button
             variant="contained"
@@ -56,8 +55,9 @@ ExportButton.propTypes = {
 };
 
 ExportButton.defaultProps = {
+    data: [],
     filename: 'data.csv',
-    label: 'Export CSV',
+    label: 'Export Transactions',
 };
 
 export default ExportButton;

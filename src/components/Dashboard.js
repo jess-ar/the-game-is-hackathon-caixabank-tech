@@ -1,138 +1,145 @@
 import React, { Profiler, useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
-import { Box, Typography, Grid, Paper } from '@mui/material';
+import { Box, Typography, Grid } from '@mui/material';
 import ExportButton from './ExportButton';
 import DownloadProfilerData from './DownloadProfilerData';
 import { onRenderCallback } from '../utils/onRenderCallback';
 import { transactionsStore } from '../stores/transactionStore';
-
+import InfoCard from './InfoCard';
 const AnalysisGraph = React.lazy(() => import('./AnalysisGraph'));
 const BalanceOverTime = React.lazy(() => import('./BalanceOverTime'));
 const Statistics = React.lazy(() => import('./Statistics'));
 const Recommendations = React.lazy(() => import('./Recommendations'));
 const RecentTransactions = React.lazy(() => import('./RecentTransactions'));
 
+function calculateTotals(transactions) {
+    const validTransactions = Array.isArray(transactions) ? transactions : [];
+
+    return validTransactions.reduce(
+        (totals, transaction) => {
+            if (transaction.type === 'income') totals.income += transaction.amount;
+            if (transaction.type === 'expense') totals.expense += transaction.amount;
+            return totals;
+        },
+        { income: 0, expense: 0 }
+    );
+}
+
 function Dashboard() {
     const transactions = useStore(transactionsStore);
-
-    const [totalIncome, setTotalIncome] = useState(0);
-    const [totalExpense, setTotalExpense] = useState(0);
+    const [totals, setTotals] = useState({ income: 0, expense: 0 });
     const [balance, setBalance] = useState(0);
     const budgetLimit = 1000;
 
     useEffect(() => {
-        console.log("Current transactions:", transactions);
-
-        const income = transactions.reduce((acc, transaction) => {
-            return transaction.type === 'income' ? acc + transaction.amount : acc;
-        }, 0);
-
-        const expense = transactions.reduce((acc, transaction) => {
-            return transaction.type === 'expense' ? acc + transaction.amount : acc;
-        }, 0);
-
-        setTotalIncome(income);
-        setTotalExpense(expense);
+        const { income, expense } = calculateTotals(transactions);
+        setTotals({ income, expense });
         setBalance(income - expense);
     }, [transactions]);
 
-    const handleEdit = (transaction) => {
-        console.log("Edit transaction:", transaction);
-    };
-
-    const handleDelete = (id) => {
-        console.log("Delete transaction with id:", id);
-    };
-
     return (
-        <Profiler id="Dashboard" onRender={onRenderCallback}>
-            <Box sx={{ p: 4 }}>
-                <Typography variant="h3" gutterBottom>
-                Financial Summary
-                </Typography>
+        <Box sx={{ mt: 2 }}>
+            <Profiler id="Dashboard" onRender={onRenderCallback}>
+                <Box component="section" aria-labelledby="financial-summary-heading" sx={{ p: 3 }}>
+                    <Typography
+                        id="financial-summary-heading"
+                        variant="h4"
+                        gutterBottom
+                        sx={{ color: 'rgb(0, 126, 174)', mb: 3 }}
+                    >
+                        Financial Summary
+                    </Typography>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-                    <ExportButton
-                        data={transactions}
-                        headers={['description', 'amount', 'type', 'category', 'date']}
-                        filename="transactions.csv"
-                    />
-                    <DownloadProfilerData />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+                        <ExportButton
+                            data={transactions || []}
+                            headers={['description', 'amount', 'type', 'category', 'date']}
+                            filename="transactions.csv"
+                            sx={{
+                                bgcolor: 'grey.300',
+                                color: 'text.secondary',
+                                borderRadius: 1,
+                                px: 2,
+                                py: 1,
+                                boxShadow: 1,
+                                '&:hover': { bgcolor: 'grey.400' },
+                            }}
+                            aria-label="Export Transactions"
+                        />
+                        <DownloadProfilerData
+                            sx={{
+                                bgcolor: 'primary.main',
+                                color: 'white',
+                                borderRadius: 1,
+                                px: 3,
+                                py: 1.5,
+                                boxShadow: 2,
+                                '&:hover': { bgcolor: 'primary.dark' },
+                            }}
+                            aria-label="Download Profiler Data"
+                        />
+                    </Box>
+
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                        <Grid item xs={12} md={4}>
+                            <InfoCard
+                                title="Total Income"
+                                value={totals.income.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                                valueColor="green"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <InfoCard
+                                title="Total Expenses"
+                                value={totals.expense.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                                valueColor="red"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <InfoCard
+                                title="Balance"
+                                value={balance.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                                valueColor={balance >= 0 ? 'green' : 'error.main'}
+                                description={
+                                    balance < 0
+                                        ? "Warning: Your balance is negative!"
+                                        : totals.expense > budgetLimit
+                                            ? "Alert: You have exceeded your budget limit!"
+                                            : null
+                                }
+                            />
+                        </Grid>
+                    </Grid>
+
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                        <Grid item xs={12} md={6}>
+                            <AnalysisGraph />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <BalanceOverTime />
+                        </Grid>
+                    </Grid>
+
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                        <Grid item xs={12} md={6}>
+                            <Statistics />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Recommendations />
+                        </Grid>
+                    </Grid>
+
+                    <Box component="section" aria-labelledby="recent-transactions-heading" sx={{ mt: 4 }}>
+                        <Typography id="recent-transactions-heading" variant="h5" gutterBottom>
+                            Recent Transactions
+                        </Typography>
+                        <RecentTransactions
+                            transactions={transactions}
+                        />
+                    </Box>
                 </Box>
-
-                <Grid container spacing={4} sx={{ mt: 4 }}>
-                    <Grid item xs={12} md={4}>
-                        <Paper sx={{ padding: 2, boxShadow: 3, borderRadius: 2 }}>
-                            <Typography variant="h6" gutterBottom>
-                                Total Income
-                            </Typography>
-                            <Typography variant="h5" data-testid="total-income">
-                                {totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Paper sx={{ padding: 2, boxShadow: 3, borderRadius: 2 }}>
-                            <Typography variant="h6" gutterBottom>
-                                Total Expenses
-                            </Typography>
-                            <Typography variant="h5" data-testid="total-expenses">
-
-                                {totalExpense.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Paper sx={{ padding: 2, boxShadow: 3, borderRadius: 2 }}>
-                            <Typography variant="h6" gutterBottom>
-                                Balance
-                            </Typography>
-                            <Typography variant="h5" data-testid="balance">
-
-                                {balance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                            </Typography>
-
-                            {balance < 0 && (
-                                <Typography variant="body1" color="error">
-                                    Warning: Your balance is negative!
-                                </Typography>
-                            )}
-                            {totalExpense > budgetLimit && (
-                                <Typography variant="body1" color="warning">
-                                    Alert: You have exceeded your budget limit!
-                                </Typography>
-                            )}
-                        </Paper>
-                    </Grid>
-                </Grid>
-
-                <Grid container spacing={4} sx={{ mt: 4 }}>
-                    <Grid item xs={12} md={6}>
-                        <Statistics />
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <Recommendations />
-                    </Grid>
-                </Grid>
-
-                <Grid container spacing={4} sx={{ mt: 4 }}>
-                    <Grid item xs={12} md={6}>
-                        <AnalysisGraph />
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <BalanceOverTime />
-                    </Grid>
-                </Grid>
-
-                <div>
-                    <RecentTransactions
-                        transactions={transactions}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                    />
-                </div>
-            </Box>
-        </Profiler>
+            </Profiler>
+        </Box>
     );
 }
 

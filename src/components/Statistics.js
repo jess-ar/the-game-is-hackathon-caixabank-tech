@@ -4,9 +4,11 @@ import { transactionsStore } from '../stores/transactionStore';
 import { Paper, Typography } from '@mui/material';
 
 function Statistics() {
-    const transactions = useStore(transactionsStore);
+    const transactions = useStore(transactionsStore) || [];
 
-    const expenses = transactions.filter(transaction => transaction.type === 'expense');
+    const validTransactions = Array.isArray(transactions) ? transactions : [];
+
+    const expenses = validTransactions.filter(transaction => transaction.type === 'expense');
 
     const totalExpense = expenses.reduce((acc, transaction) => acc + transaction.amount, 0);
     const uniqueDates = [...new Set(expenses.map(transaction => new Date(transaction.date).toLocaleDateString()))];
@@ -23,6 +25,7 @@ function Statistics() {
             categoryExpenses[transaction.category] = transaction.amount;
         }
     });
+    
     let maxCategory = null;
     let maxAmount = 0;
 
