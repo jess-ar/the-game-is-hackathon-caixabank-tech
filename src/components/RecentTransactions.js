@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import TransactionRow from './TransactionRow';
 
-function RecentTransactions({  transactions, onEdit, onDelete }) {
+function RecentTransactions({ transactions, onEdit, onDelete }) {
 
     const recentTransactions = useMemo(() => {
         if (!Array.isArray(transactions)) {
@@ -25,7 +25,7 @@ function RecentTransactions({  transactions, onEdit, onDelete }) {
 
     return (
         <div>
-            <Typography variant="h3" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold", }}>
                 Recent Transactions
             </Typography>
             <TableContainer component={Paper}>
@@ -40,12 +40,11 @@ function RecentTransactions({  transactions, onEdit, onDelete }) {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                    {recentTransactions.map((transaction) => (
-                            <TransactionRow 
-                                key={transaction.id} 
-                                transaction={transaction} 
-                                onEdit={onEdit} 
-                                onDelete={onDelete} 
+                        {recentTransactions.map((transaction) => (
+                            <TransactionRow
+                                key={transaction.id}
+                                transaction={transaction}
+                                showActions={false}
                             />
                         ))}
                     </TableBody>

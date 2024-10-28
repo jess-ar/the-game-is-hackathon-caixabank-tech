@@ -7,6 +7,15 @@ export const userSettingsStore = atom({
     budgetExceeded: false,
 });
 
+
+export const updateUserSettings = (newSettings) => {
+    userSettingsStore.set({
+        ...userSettingsStore.get(),
+        ...newSettings,
+    });
+};
+
+
 if (process.env.NODE_ENV === 'development') {
     window.userSettingsStore = userSettingsStore;
 }

@@ -1,33 +1,53 @@
 import React from 'react';
 import { useStore } from '@nanostores/react';
 import { transactionsStore } from '../stores/transactionStore';
-import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    Tooltip,
-    ResponsiveContainer,
-} from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Paper, Typography } from '@mui/material';
 
 function BalanceOverTime() {
-    const transactions = useStore(transactionsStore);
+    const transactions = useStore(transactionsStore) || [];
 
-    // Instructions:
-    // - Sort the transactions by date to display the balance over time.
-    // - Calculate the cumulative balance as you iterate through the sorted transactions.
-    // - Each object in the 'data' array should be of the form: { date, Balance }, where 'date' is the transaction date and 'Balance' is the cumulative balance at that date.
-    const data = []; // Replace with logic to calculate cumulative balance for each date.
+    const sortedTransactions = Array.isArray(transactions) 
+        ? [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date))
+        : [];
+
+    const data = sortedTransactions.reduce((acc, transaction) => {
+        const lastBalance = acc.length ? acc[acc.length - 1].Balance : 0;
+        const newBalance = transaction.type === 'income' 
+            ? lastBalance + transaction.amount 
+            : lastBalance - transaction.amount;
+
+        acc.push({
+            date: new Date(transaction.date).toLocaleDateString('en-GB'),
+            Balance: newBalance,
+        });
+
+        return acc;
+    }, []);
 
     return (
-        <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data}>
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="Balance" stroke="#8884d8" />
-            </LineChart>
-        </ResponsiveContainer>
+        <Paper
+            sx={{
+                padding: 3,
+                width: '100%',
+                maxWidth: '900px',
+                minHeight: '500px',
+                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+                borderRadius: 2,
+            }}
+        >
+            <Typography variant="h5" gutterBottom sx={{ alignSelf: 'flex-start' }}>
+                Balance Over Time
+            </Typography>
+            <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={data}>
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="Balance" stroke="#8884d8" />
+                </LineChart>
+            </ResponsiveContainer>
+        </Paper>
     );
 }
 
