@@ -126,7 +126,7 @@ const Navbar = ({ toggleTheme, isDarkMode }) => {
                             <Divider
                                 orientation="vertical"
                                 flexItem
-                                sx={{ mx: 2, height: 28, alignSelf: "center", bgcolor: "rgba(0, 0, 0, 0.12)" }}
+                                sx={{ mx: 1, height: 28, alignSelf: "center", bgcolor: "rgba(0, 0, 0, 0.12)" }}
                             />
                         )}
 

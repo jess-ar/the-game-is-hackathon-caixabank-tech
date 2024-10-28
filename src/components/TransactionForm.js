@@ -4,11 +4,12 @@ import { transactionsStore } from '../stores/transactionStore';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Select, MenuItem, InputLabel, FormControl, Grid, Box } from '@mui/material';
 import { categoryKeywords } from '../constants/categoryKeywords';
 import { allCategories } from '../constants/categories';
+import { setTransactions, addTransaction } from '../stores/transactionStore';
 
 
 function TransactionForm({ transactionToEdit, onClose }) {
     const transactions = useStore(transactionsStore);
-    
+
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [type, setType] = useState('expense');
@@ -24,26 +25,31 @@ function TransactionForm({ transactionToEdit, onClose }) {
             }
             return 'Other Expenses';
         };
-    
+
         if (transactionToEdit) {
             setDescription(transactionToEdit.description);
             setAmount(transactionToEdit.amount);
             setType(transactionToEdit.type);
             setCategory(transactionToEdit.category);
             setDate(transactionToEdit.date);
-        } else {
+        } else if (description) {
             setCategory(assignCategory(description));
         }
     }, [transactionToEdit, description]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
+    
         if (!description || !amount || !type || !category || !date) {
             alert("Please fill out all fields.");
             return;
         }
-
+    
+        if (parseFloat(amount) <= 0) {
+            alert("Amount should be greater than zero.");
+            return;
+        }
+    
         const transaction = {
             id: transactionToEdit ? transactionToEdit.id : new Date().getTime(),
             description,
@@ -52,17 +58,16 @@ function TransactionForm({ transactionToEdit, onClose }) {
             category,
             date,
         };
-
+    
         if (transactionToEdit) {
-            transactions.update((existingTransactions) => {
-                return existingTransactions.map((t) =>
-                    t.id === transactionToEdit.id ? transaction : t
-                );
-            });
+            const updatedTransactions = transactions.map((t) =>
+                t.id === transactionToEdit.id ? transaction : t
+            );
+            setTransactions(updatedTransactions);
         } else {
-            transactions.update((existingTransactions) => [...existingTransactions, transaction]);
+            addTransaction(transaction);
         }
-
+    
         onClose();
     };
 
@@ -83,7 +88,7 @@ function TransactionForm({ transactionToEdit, onClose }) {
                                 margin="normal"
                                 required
                                 name="description"
-                                className="border border-gray-300 rounded-lg p-2"
+                                sx={{ border: '1px solid #D1D5DB', borderRadius: 1, p: 1 }}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -96,20 +101,17 @@ function TransactionForm({ transactionToEdit, onClose }) {
                                 margin="normal"
                                 required
                                 inputProps={{ min: 0, step: '0.01' }}
-                                name="amount"
-                                className="border border-gray-300 rounded-lg p-2"
+                                sx={{ border: '1px solid #D1D5DB', borderRadius: 1, p: 1 }}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth margin="normal" required >
+                            <FormControl fullWidth margin="normal" required>
                                 <InputLabel id="type-label">Type</InputLabel>
                                 <Select
                                     labelId="type-label"
                                     value={type}
                                     onChange={(e) => setType(e.target.value)}
                                     label="Type"
-                                    name="type"
-                                    className="border border-gray-300 rounded-lg"
                                 >
                                     <MenuItem value="income">Income</MenuItem>
                                     <MenuItem value="expense">Expense</MenuItem>
@@ -124,7 +126,6 @@ function TransactionForm({ transactionToEdit, onClose }) {
                                     value={category}
                                     onChange={(e) => setCategory(e.target.value)}
                                     label="Category"
-                                    name="category"
                                 >
                                     {allCategories.map((cat) => (
                                         <MenuItem key={cat} value={cat}>{cat}</MenuItem>

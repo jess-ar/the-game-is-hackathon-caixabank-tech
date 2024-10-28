@@ -1,10 +1,12 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useStore } from '@nanostores/react';
-import { transactionsStore } from '../stores/transactionStore';
+import { transactionsStore, setTransactions } from '../stores/transactionStore';
 import TransactionForm from './TransactionForm';
 import TransactionRow from './TransactionRow';
 import { allCategories } from '../constants/categories';
 import TablePagination from '@mui/material/TablePagination';
+import ExportButton from './ExportButton';
+import DownloadProfilerData from './DownloadProfilerData';
 
 import {
     Table,
@@ -20,12 +22,11 @@ import {
     InputLabel,
     FormControl,
     Box,
-    Typography
+    Typography,
 } from '@mui/material';
 
-
 function TransactionList() {
-    const transactions = useStore(transactionsStore);
+    const storeTransactions = useStore(transactionsStore);
 
     const [filterCategory, setFilterCategory] = useState('');
     const [filterType, setFilterType] = useState('');
@@ -34,19 +35,21 @@ function TransactionList() {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-
     const deleteTransaction = useCallback((id) => {
-        transactionsStore.update((prev) => prev.filter((transaction) => transaction.id !== id));
-    }, []);
+        const updatedTransactions = storeTransactions.filter((transaction) => transaction.id !== id);
+        setTransactions(updatedTransactions);
+    }, [storeTransactions]);
 
-    const handleEdit = useCallback((transaction) => {
-        transactionsStore.update((prev) =>
-            prev.map((t) => t.id === transaction.id ? transaction : t)
+    const handleEdit = useCallback((updatedTransaction) => {
+        const updatedTransactions = storeTransactions.map((transaction) =>
+            transaction.id === updatedTransaction.id ? updatedTransaction : transaction
         );
-    }, []);
+        setTransactions(updatedTransactions);
+    }, [storeTransactions]);
 
-    const filteredTransactions = useMemo(() =>
-        transactions
+    const filteredTransactions = useMemo(() => {
+        if (!Array.isArray(storeTransactions)) return [];
+        return storeTransactions
             .filter(transaction =>
                 (!filterCategory || transaction.category === filterCategory) &&
                 (!filterType || transaction.type === filterType)
@@ -55,8 +58,8 @@ function TransactionList() {
                 if (sortField === 'amount') return b.amount - a.amount;
                 if (sortField === 'date') return new Date(b.date) - new Date(a.date);
                 return 0;
-            })
-        , [transactions, filterCategory, filterType, sortField]);
+            });
+    }, [storeTransactions, filterCategory, filterType, sortField]);
 
     const paginatedTransactions = useMemo(() => {
         const start = page * rowsPerPage;
@@ -75,21 +78,58 @@ function TransactionList() {
 
     return (
         <Box sx={{ mt: 4 }}>
-            <Typography variant="h4" gutterBottom>
+            <Typography
+                id="financial-summary-heading"
+                variant="h4"
+                gutterBottom
+                sx={{ color: 'rgb(0, 126, 174)', mb: 3 }}
+            >
                 Transaction List
             </Typography>
 
-            <Button
-                variant="contained"
-                color="primary"
-                onClick={() => setIsModalOpen(true)}
-            >
-                Add Transaction
-            </Button>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => setIsModalOpen(true)}
+                    >
+                        Add Transaction
+                    </Button>
+                    <ExportButton
+                        data={storeTransactions || []}
+                        headers={['description', 'amount', 'type', 'category', 'date']}
+                        filename="transactions.csv"
+                        sx={{
+                            bgcolor: 'grey.300',
+                            color: 'text.secondary',
+                            borderRadius: 1,
+                            px: 2,
+                            py: 1,
+                            boxShadow: 1,
+                            '&:hover': { bgcolor: 'grey.400' },
+                        }}
+                        aria-label="Export Transactions"
+                    />
+                </Box>
+                <Box>
+                    <DownloadProfilerData
+                        sx={{
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            borderRadius: 1,
+                            px: 3,
+                            py: 1.5,
+                            boxShadow: 2,
+                            '&:hover': { bgcolor: 'primary.dark' },
+                        }}
+                        aria-label="Download Profiler Data"
+                    />
+                </Box>
+            </Box>
+
             {isModalOpen && (
-                <TransactionForm
-                    onClose={() => setIsModalOpen(false)}
-                />
+                <TransactionForm onClose={() => setIsModalOpen(false)} />
             )}
 
             <Box sx={{ display: 'flex', gap: 2, my: 2 }}>
@@ -134,7 +174,7 @@ function TransactionList() {
                 </FormControl>
             </Box>
 
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} sx={{ marginBottom: 5 }}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -148,24 +188,27 @@ function TransactionList() {
                     </TableHead>
                     <TableBody>
                         {paginatedTransactions.map((transaction) => (
-                            <TransactionRow
-                                key={transaction.id}
-                                transaction={transaction}
-                                onEdit={handleEdit}
-                                onDelete={deleteTransaction}
+                            <TransactionRow 
+                                key={transaction.id} 
+                                transaction={transaction} 
+                                onEdit={handleEdit} 
+                                onDelete={deleteTransaction} 
+                                showActions={true}
                             />
                         ))}
                     </TableBody>
                 </Table>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-start', paddingLeft: 0 }}>
+                    <TablePagination
+                        component="div"
+                        count={filteredTransactions.length}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        rowsPerPage={rowsPerPage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
+                </Box>
             </TableContainer>
-            <TablePagination
-                component="div"
-                count={filteredTransactions.length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-            />
         </Box>
     );
 }

@@ -1,61 +1,76 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { transactionsStore } from '../stores/transactionStore';
-import { CircularProgress, Typography, Box } from '@mui/material';
+import { CircularProgress, Typography, Paper } from '@mui/material';
 
 function Recommendations() {
     const transactions = useStore(transactionsStore); 
     const [loading, setLoading] = useState(true); 
-    const [error, setError] = useState(null); 
 
     useEffect(() => {
-        // Simulate data loading and handle possible errors
-        // Instructions:
-        // - Set loading to true before fetching the data.
-        // - After a delay (simulated with setTimeout), set loading to false.
-        // - You may simulate an error by setting the error state.
         setLoading(true);
         setTimeout(() => {
-            // Simulate error in case of failure (optional)
             setLoading(false);
         }, 1000);
     }, []);
 
     if (loading) {
-        // Show a loading indicator while data is being fetched
         return <CircularProgress />;
     }
 
-    if (error) {
-        // Display an error message if something goes wrong
-        return <Typography color="error">{error}</Typography>;
+    const getMonthlyExpenses = (transactionsArray, month, year) => {
+        const validTransactions = Array.isArray(transactionsArray) ? transactionsArray : [];
+        
+        return validTransactions
+            .filter(transaction => 
+                transaction.type === 'expense' &&
+                new Date(transaction.date).getMonth() === month &&
+                new Date(transaction.date).getFullYear() === year
+            )
+            .reduce((total, transaction) => total + transaction.amount, 0);
+    };
+
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+    const expenseThisMonth = getMonthlyExpenses(transactions, currentMonth, currentYear);
+    const expenseLastMonth = getMonthlyExpenses(transactions, lastMonth, lastMonthYear);
+
+    let comparisonMessage = '';
+
+    if (expenseLastMonth === 0) {
+        comparisonMessage = "This is your first month recording expenses. Keep it up!";
+    } else {
+        const difference = expenseThisMonth - expenseLastMonth;
+        const percentageChange = Math.abs((difference / expenseLastMonth) * 100).toFixed(2);
+
+        if (difference > 0) {
+            comparisonMessage = `Your expenses have increased by ${percentageChange}%. Consider reviewing your expenses.`;
+        } else if (difference < 0) {
+            comparisonMessage = `Great job! Your expenses have decreased by ${percentageChange}%. Keep up the good work!`;
+        } else {
+            comparisonMessage = "Your spending hasn't changed compared to last month.";
+        }
     }
 
-    // Implement logic to compare expenses between months
-    // Instructions:
-    // - Use the transactions to calculate expenses for the current and previous months.
-    // - Filter transactions by type ('expense') and by month/year.
-    // - Compare the total expenses of this month with last month.
-
-    const expenses = []; // Implement logic to filter and extract expenses
-    const expenseThisMonth = 0; // Calculate total expenses for the current month
-    const expenseLastMonth = 0; // Calculate total expenses for the last month
-
-    // Generate a message based on the comparison between months
-    // Instructions:
-    // - If there are no expenses for last month, display a message encouraging the user to keep recording.
-    // - If expenses have increased, calculate the percentage increase and suggest reviewing expenses.
-    // - If expenses have decreased, congratulate the user and show the percentage decrease.
-    // - If expenses are the same, notify the user that their spending hasn't changed.
-
-    const message = ''; // Implement logic to generate the appropriate message based on the comparison
-
     return (
-        <Box sx={{ mt: 4 }}>
-            <Typography variant="h5">Recommendations</Typography>
-            {/* Display the recommendation message according to the change in expenditure */}
-            <Typography>{message}</Typography>
-        </Box>
+        <Paper
+            sx={{
+                padding: 2,
+                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+                borderRadius: 4,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                mt: 2
+            }}
+        >
+            <Typography variant="h6" gutterBottom>Recommendations</Typography>
+            <Typography>{comparisonMessage}</Typography>
+        </Paper>
     );
 }
 

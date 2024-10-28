@@ -7,10 +7,10 @@ const NotificationPopup = ({ open, message, onClose }) => {
             open={open}
             autoHideDuration={6000}
             onClose={onClose}
-            anchorOrigin={{ vertical: 'top', horizontal: 'right' }} 
+            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
         >
-            <Alert onClose={onClose} severity="warning" sx={{ width: '300px' }}>
-                {message}
+            <Alert severity="warning">
+                Warning: You have exceeded your budget!
             </Alert>
         </Snackbar>
     );
